@@ -14,7 +14,8 @@ import { TaskPanel } from './parts/task-panel'
 import { MiniShip } from './parts/mini-ship'
 import { ResourcePanel } from './parts/resource-panel'
 import { AdmiralPanel } from './parts/admiral-panel'
-import { DockPanel } from './parts/dock-panel'
+import { RepairPanel } from './parts/repair-panel'
+import { ConstructionPanel } from './parts/construction-panel'
 import { Responsive as ResponsiveReactGridLayout } from 'react-grid-layout'
 
 import 'react-grid-layout/css/styles.css'
@@ -30,8 +31,24 @@ const MiniShipContainer = styled.div`
   }
 `
 
+// polyfill for old layouts
+function layoutConfigOutdated(layoutConfig) {
+  return !layoutConfig.sm.find(a => a.i === 'repair-panel') || !layoutConfig.lg.find(a => a.i === 'repair-panel')
+}
+
+function layoutConfigFix(layoutConfig) {
+  if (layoutConfigOutdated(layoutConfig)) {
+    return defaultLayout
+  }
+  return layoutConfig
+}
+
+if (layoutConfigOutdated(config.get('poi.mainpanel.layout', defaultLayout))) {
+  config.set('poi.mainpanel.layout', defaultLayout)
+}
+
 @connect((state, props) => ({
-  layouts: get(state, 'config.poi.mainpanel.layout', defaultLayout),
+  layouts: layoutConfigFix(get(state, 'config.poi.mainpanel.layout', defaultLayout)),
   editable: get(state, 'config.poi.layout.editable', false),
   mainpanewidth: get(state, 'layout.mainpane.width', 450),
 }))
@@ -46,13 +63,10 @@ export class reactClass extends Component {
 
   componentWillUnmount() {
     layoutResizeObserver.unobserve(this.mainpane)
-    layoutResizeObserver.unobserve(this.combinedpane)
   }
 
   componentDidMount() {
-    this.combinedpane = document.querySelector('.main-view .combined-panels')
     layoutResizeObserver.observe(this.mainpane)
-    layoutResizeObserver.observe(this.combinedpane)
   }
 
   render() {
@@ -91,8 +105,11 @@ export class reactClass extends Component {
           >
             <MiniShip editable={this.props.editable} />
           </MiniShipContainer>
-          <div className="combined-panels panel-col" key="combined-panels">
-            <DockPanel editable={this.props.editable} />
+          <div className="repair-panel panel-col" key="repair-panel">
+            <RepairPanel editable={this.props.editable} />
+          </div>
+          <div className="construction-panel panel-col" key="construction-panel">
+            <ConstructionPanel editable={this.props.editable} />
           </div>
           <div className="expedition-panel" key="expedition-panel">
             <ExpeditionPanel editable={this.props.editable} />
